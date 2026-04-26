@@ -4,22 +4,11 @@ import json
 import logging
 import random
 import re
-import sys
 import time
 
 import requests
 from urllib3.exceptions import LocationParseError
-
-try:                 # Python 2
-    from urllib.parse import urljoin, urlparse
-except ImportError:  # Python 3
-    from urlparse import urljoin, urlparse
-
-try:                 # Python 2
-    reload(sys)
-    sys.setdefaultencoding('latin-1')
-except NameError:    # Python 3
-    pass
+from urllib.parse import urljoin, urlparse
 
 
 class Crawler(object):
@@ -121,7 +110,9 @@ class Crawler(object):
         :return: list of extracted links
         """
         pattern = r"href=[\"'](?!#)(.*?)[\"'].*?"  # ignore links starting with #, no point in re-visiting the same page
-        urls = re.findall(pattern, str(body))
+        if isinstance(body, bytes):
+            body = body.decode("utf-8", errors="replace")
+        urls = re.findall(pattern, body)
 
         normalize_urls = [self._normalize_link(url, root_url) for url in urls]
         filtered_urls = list(filter(self._should_accept_url, normalize_urls))
@@ -238,13 +229,13 @@ class Crawler(object):
                 self._browse_from_links()
 
             except requests.exceptions.RequestException:
-                logging.warn("Error connecting to root url: {}".format(url))
+                logging.warning("Error connecting to root url: {}".format(url))
                 
             except MemoryError:
-                logging.warn("Error: content at url: {} is exhausting the memory".format(url))
+                logging.warning("Error: content at url: {} is exhausting the memory".format(url))
 
             except LocationParseError:
-                logging.warn("Error encountered during parsing of: {}".format(url))
+                logging.warning("Error encountered during parsing of: {}".format(url))
 
             except self.CrawlerTimedOut:
                 logging.info("Timeout has exceeded, exiting")
