@@ -207,11 +207,10 @@ class Crawler(object):
         is specified then return false
         :return: boolean indicating whether the timeout has reached
         """
-        is_timeout_set = self._config["timeout"] is not False  # False is set when no timeout is desired
+        if self._config["timeout"] is False:
+            return False
         end_time = self._start_time + datetime.timedelta(seconds=self._config["timeout"])
-        is_timed_out = datetime.datetime.now() >= end_time
-
-        return is_timeout_set and is_timed_out
+        return datetime.datetime.now() >= end_time
 
     def crawl(self):
         """
@@ -243,9 +242,9 @@ class Crawler(object):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--log', metavar='-l', type=str, help='logging level', default='info')
-    parser.add_argument('--config', metavar='-c', required=True, type=str, help='config file')
-    parser.add_argument('--timeout', metavar='-t', required=False, type=int,
+    parser.add_argument('-l', '--log', type=str, help='logging level', default='info')
+    parser.add_argument('-c', '--config', required=True, type=str, help='config file')
+    parser.add_argument('-t', '--timeout', required=False, type=int,
                         help='for how long the crawler should be running, in seconds', default=False)
     args = parser.parse_args()
 

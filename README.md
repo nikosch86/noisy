@@ -1,55 +1,52 @@
 
 # Noisy
-[![CircleCI](https://circleci.com/gh/1tayH/noisy/tree/master.svg?style=shield)](https://circleci.com/gh/1tayH/noisy/tree/master)
+[![CI](https://github.com/nikosch86/noisy/actions/workflows/ci.yml/badge.svg)](https://github.com/nikosch86/noisy/actions/workflows/ci.yml)
 
-A simple python script that generates random HTTP/DNS traffic noise in the background while you go about your regular web browsing, to make your web traffic data less valuable for selling and for extra obscurity.
+A simple Python script that generates random HTTP/DNS traffic noise in the background while you go about your regular web browsing, to make your web traffic data less valuable for selling and for extra obscurity.
 
-Tested on MacOS High Sierra, Ubuntu 16.04 and Raspbian Stretch and is compatable with both Python 2.7 and 3.6
+Tested on Python 3.12 across Linux, macOS, and Windows (x86_64 and arm64).
 
 ## Getting Started
 
-These instructions will get you a copy of the project up and running on your local machine
+These instructions will get you a copy of the project up and running on your local machine.
 
 ### Dependencies
 
-Install `requests` if you do not have it already installed, using `pip`:
+Install the runtime dependencies:
 
 ```
-pip install requests
+pip install -r requirements.txt
 ```
 
 ### Usage
 
-Clone the repository
+Clone the repository:
 ```
-git clone https://github.com/1tayH/noisy.git
-```
-
-Navigate into the `noisy` directory
-```
+git clone https://github.com/nikosch86/noisy.git
 cd noisy
 ```
 
-Run the script
-
+Run the script:
 ```
 python noisy.py --config config.json
 ```
 
-The program can accept a number of command line arguments:
+Command-line arguments:
 ```
 $ python noisy.py --help
-usage: noisy.py [-h] [--log -l] --config -c [--timeout -t]
+usage: noisy.py [-h] [-l LOG] -c CONFIG [-t TIMEOUT]
 
-optional arguments:
-  -h, --help    show this help message and exit
-  --log -l      logging level
-  --config -c   config file
-  --timeout -t  for how long the crawler should be running, in seconds
+options:
+  -h, --help            show this help message and exit
+  -l LOG, --log LOG     logging level
+  -c CONFIG, --config CONFIG
+                        config file
+  -t TIMEOUT, --timeout TIMEOUT
+                        for how long the crawler should be running, in seconds
 ```
-only the config file argument is required.
+Only the `--config` argument is required.
 
-###  Output
+### Output
 ```
 $ docker run -it noisy --config config.json --log debug
 DEBUG:urllib3.connectionpool:Starting new HTTP connection (1): 4chan.org:80
@@ -61,38 +58,32 @@ INFO:root:Visiting http://boards.4chan.org/s4s/
 DEBUG:urllib3.connectionpool:Starting new HTTP connection (1): boards.4chan.org:80
 DEBUG:urllib3.connectionpool:http://boards.4chan.org:80 "GET /s4s/ HTTP/1.1" 200 None
 INFO:root:Visiting http://boards.4chan.org/s4s/thread/6850193#p6850345
-DEBUG:urllib3.connectionpool:Starting new HTTP connection (1): boards.4chan.org:80
-DEBUG:urllib3.connectionpool:http://boards.4chan.org:80 "GET /s4s/thread/6850193 HTTP/1.1" 200 None
-INFO:root:Visiting http://boards.4chan.org/o/
-DEBUG:urllib3.connectionpool:Starting new HTTP connection (1): boards.4chan.org:80
-DEBUG:urllib3.connectionpool:http://boards.4chan.org:80 "GET /o/ HTTP/1.1" 200 None
-DEBUG:root:Hit a dead end, moving to the next root URL
-DEBUG:urllib3.connectionpool:Starting new HTTPS connection (1): www.reddit.com:443
-DEBUG:urllib3.connectionpool:https://www.reddit.com:443 "GET / HTTP/1.1" 200 None
-DEBUG:root:found 237 links
-INFO:root:Visiting https://www.reddit.com/user/Saditon
-DEBUG:urllib3.connectionpool:Starting new HTTPS connection (1): www.reddit.com:443
-DEBUG:urllib3.connectionpool:https://www.reddit.com:443 "GET /user/Saditon HTTP/1.1" 200 None
 ...
 ```
 
 ## Build Using Docker
 
-1. Build the image
+```
+docker build -t noisy .
+docker run -it noisy --config config.json
+```
 
-`docker build -t noisy .`
+The published image is multi-arch (linux/amd64, linux/arm64, linux/arm/v7) and pulls cleanly on Raspberry Pi.
 
-**Or** if you'd like to build it for a **Raspberry Pi** (running Raspbian stretch):
+## Development
 
-`docker build -f Dockerfile.pi -t noisy .`
+Install dev dependencies and run the test suite via the Makefile:
 
-2. Create the container and run:
-
-`docker run -it noisy --config config.json`
+```
+make install   # install runtime + dev deps
+make test      # run the unit tests
+make coverage  # run tests with coverage (fails under 85%)
+make lint      # run ruff
+```
 
 ## Some examples
 
-Some edge-cases examples are available on the `examples` folder. You can read more there [examples/README.md](examples/README.md).
+Some edge-case examples are available in the `examples` folder. See [examples/README.md](examples/README.md).
 
 ## Authors
 
@@ -102,7 +93,7 @@ See also the list of [contributors](https://github.com/1tayH/Noisy/contributors)
 
 ## License
 
-This project is licensed under the GNU GPLv3 License - see the [LICENSE.md](LICENSE.md) file for details
+This project is licensed under the GNU GPLv3 License - see the [LICENSE](LICENSE) file for details.
 
 ## Acknowledgments
 
