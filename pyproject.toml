@@ -1,14 +1,14 @@
 [build-system]
-requires = ["setuptools>=68"]
+requires = ["setuptools>=68", "setuptools-scm>=8"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "noisy"
-version = "1.0.0"
+dynamic = ["version"]
 description = "Generates random HTTP/DNS traffic noise in the background."
 readme = "README.md"
 license = {text = "GPL-3.0-or-later"}
-requires-python = ">=3.12"
+requires-python = ">=3.10"
 authors = [{name = "Itay Hury"}]
 dependencies = [
     "requests>=2.32.0",
@@ -20,6 +20,7 @@ dev = [
     "pytest-cov>=4.1",
     "ruff>=0.5",
     "pip-tools>=7.4",
+    "pre-commit>=3.7",
 ]
 
 [project.scripts]
@@ -27,6 +28,9 @@ noisy = "noisy:main"
 
 [tool.setuptools]
 py-modules = ["noisy"]
+
+[tool.setuptools_scm]
+fallback_version = "0.0.0+unknown"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

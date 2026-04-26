@@ -5,6 +5,7 @@ These tests pin down current Py2/Py3 behavior before the upcoming modernization
 behaviors most likely to break under that migration -- the str(bytes) trap in
 _extract_urls being the headline risk.
 """
+
 import datetime
 import json
 import os
@@ -42,6 +43,7 @@ def make_crawler(**overrides):
 # _normalize_link
 # ---------------------------------------------------------------------------
 
+
 class TestNormalizeLink:
     def test_relative_path_joined_with_root(self):
         out = noisy.Crawler._normalize_link("/images", "https://imgur.com")
@@ -52,10 +54,14 @@ class TestNormalizeLink:
         assert out == "https://example.com/dir/page.html"
 
     def test_protocol_relative_link_inherits_scheme(self):
-        out = noisy.Crawler._normalize_link("//cdn.example.com/a.js", "https://example.com/")
+        out = noisy.Crawler._normalize_link(
+            "//cdn.example.com/a.js", "https://example.com/"
+        )
         assert out == "https://cdn.example.com/a.js"
 
-        out_http = noisy.Crawler._normalize_link("//cdn.example.com/a.js", "http://example.com/")
+        out_http = noisy.Crawler._normalize_link(
+            "//cdn.example.com/a.js", "http://example.com/"
+        )
         assert out_http == "http://cdn.example.com/a.js"
 
     def test_absolute_url_returned_as_is(self):
@@ -64,31 +70,40 @@ class TestNormalizeLink:
 
     def test_malformed_url_returns_none(self):
         # urlparse on Py3 raises ValueError for a stray ']' in the netloc.
-        assert noisy.Crawler._normalize_link("http://]bad/", "https://example.com") is None
+        assert (
+            noisy.Crawler._normalize_link("http://]bad/", "https://example.com") is None
+        )
 
 
 # ---------------------------------------------------------------------------
 # _is_valid_url
 # ---------------------------------------------------------------------------
 
+
 class TestIsValidUrl:
-    @pytest.mark.parametrize("url", [
-        "http://example.com",
-        "https://example.com/path",
-        "ftp://files.example.com/x",
-        "http://192.168.1.1/",
-        "http://example.com:8080/path?x=1",
-    ])
+    @pytest.mark.parametrize(
+        "url",
+        [
+            "http://example.com",
+            "https://example.com/path",
+            "ftp://files.example.com/x",
+            "http://192.168.1.1/",
+            "http://example.com:8080/path?x=1",
+        ],
+    )
     def test_accepts_valid(self, url):
         assert noisy.Crawler._is_valid_url(url) is True
 
-    @pytest.mark.parametrize("url", [
-        "javascript:void(0)",
-        "mailto:foo@example.com",
-        "not a url at all",
-        "",
-        "//cdn.example.com/a.js",  # protocol-relative is not valid as-is
-    ])
+    @pytest.mark.parametrize(
+        "url",
+        [
+            "javascript:void(0)",
+            "mailto:foo@example.com",
+            "not a url at all",
+            "",
+            "//cdn.example.com/a.js",  # protocol-relative is not valid as-is
+        ],
+    )
     def test_rejects_invalid(self, url):
         assert noisy.Crawler._is_valid_url(url) is False
 
@@ -96,6 +111,7 @@ class TestIsValidUrl:
 # ---------------------------------------------------------------------------
 # _is_blacklisted / _should_accept_url
 # ---------------------------------------------------------------------------
+
 
 class TestBlacklisting:
     def test_is_blacklisted_substring_match(self):
@@ -130,9 +146,10 @@ class TestBlacklisting:
 # _extract_urls -- bytes vs str input is the most likely Py3 regression
 # ---------------------------------------------------------------------------
 
+
 class TestExtractUrls:
     BODY_STR = (
-        '<html><body>'
+        "<html><body>"
         '<a href="https://example.com/a">A</a>'
         "<a href='https://example.com/b'>B</a>"
         '<a href="/relative/c">C</a>'
@@ -140,7 +157,7 @@ class TestExtractUrls:
         '<a href="javascript:void(0)">junk</a>'
         '<a href="#anchor">skip</a>'
         '<a href="https://blocked.example.com/x">blocked</a>'
-        '</body></html>'
+        "</body></html>"
     )
 
     def _expected_for_root(self, root):
@@ -148,8 +165,9 @@ class TestExtractUrls:
             "https://example.com/a",
             "https://example.com/b",
             # joined relative
-            "https://example.com/relative/c" if root.endswith("/") else
-            "https://example.com/relative/c",
+            "https://example.com/relative/c"
+            if root.endswith("/")
+            else "https://example.com/relative/c",
             "https://cdn.example.com/d.js",
         ]
 
@@ -197,12 +215,18 @@ class TestExtractUrls:
 
     def test_no_links_returns_empty(self):
         c = make_crawler()
-        assert c._extract_urls("<html><body>no links</body></html>", "https://example.com/") == []
+        assert (
+            c._extract_urls(
+                "<html><body>no links</body></html>", "https://example.com/"
+            )
+            == []
+        )
 
 
 # ---------------------------------------------------------------------------
 # _remove_and_blacklist
 # ---------------------------------------------------------------------------
+
 
 class TestRemoveAndBlacklist:
     def test_removes_link_and_appends_to_blacklist(self):
@@ -222,6 +246,7 @@ class TestRemoveAndBlacklist:
 # ---------------------------------------------------------------------------
 # _is_timeout_reached
 # ---------------------------------------------------------------------------
+
 
 class TestIsTimeoutReached:
     def test_timeout_false_returns_false_even_after_long_wait(self):
@@ -246,6 +271,7 @@ class TestIsTimeoutReached:
 # ---------------------------------------------------------------------------
 # set_config / set_option / load_config_file
 # ---------------------------------------------------------------------------
+
 
 class TestConfig:
     def test_set_config_replaces_dict(self):
@@ -289,6 +315,7 @@ class TestConfig:
 # _browse_from_links
 # ---------------------------------------------------------------------------
 
+
 def _fake_response(content):
     r = mock.Mock()
     r.content = content
@@ -331,9 +358,12 @@ class TestBrowseFromLinks:
             b'<a href="https://x.example.com/1">1</a>'
             b'<a href="https://y.example.com/2">2</a>'
         )
-        with mock.patch.object(noisy.requests, "get",
-                               return_value=_fake_response(body)) as get, \
-             mock.patch.object(noisy.time, "sleep") as sleep:
+        with (
+            mock.patch.object(
+                noisy.requests, "get", return_value=_fake_response(body)
+            ) as get,
+            mock.patch.object(noisy.time, "sleep") as sleep,
+        ):
             c._browse_from_links()
 
         assert get.called
@@ -348,10 +378,11 @@ class TestBrowseFromLinks:
 
         # Body has only one link -> sub_links length <= 1 -> dead end branch.
         body = b'<a href="https://only.example.com/x">only</a>'
-        with mock.patch.object(noisy.requests, "get",
-                               return_value=_fake_response(body)), \
-             mock.patch.object(noisy.time, "sleep"), \
-             mock.patch.object(noisy.random, "choice", side_effect=lambda seq: seq[0]):
+        with (
+            mock.patch.object(noisy.requests, "get", return_value=_fake_response(body)),
+            mock.patch.object(noisy.time, "sleep"),
+            mock.patch.object(noisy.random, "choice", side_effect=lambda seq: seq[0]),
+        ):
             c._browse_from_links()
 
         assert "https://a.com/" not in c._links
@@ -362,10 +393,15 @@ class TestBrowseFromLinks:
         c._links = ["https://a.com/", "https://b.com/"]
         c._start_time = datetime.datetime.now()
 
-        with mock.patch.object(noisy.requests, "get",
-                               side_effect=requests.exceptions.ConnectionError("boom")), \
-             mock.patch.object(noisy.time, "sleep"), \
-             mock.patch.object(noisy.random, "choice", side_effect=lambda seq: seq[0]):
+        with (
+            mock.patch.object(
+                noisy.requests,
+                "get",
+                side_effect=requests.exceptions.ConnectionError("boom"),
+            ),
+            mock.patch.object(noisy.time, "sleep"),
+            mock.patch.object(noisy.random, "choice", side_effect=lambda seq: seq[0]),
+        ):
             c._browse_from_links()
 
         assert "https://a.com/" in c._config["blacklisted_urls"]
@@ -375,6 +411,7 @@ class TestBrowseFromLinks:
 # ---------------------------------------------------------------------------
 # crawl
 # ---------------------------------------------------------------------------
+
 
 class TestCrawl:
     def test_crawl_exits_on_timeout(self):
@@ -391,9 +428,11 @@ class TestCrawl:
         def fake_get(*a, **kw):
             return _fake_response(body)
 
-        with mock.patch.object(noisy.requests, "get", side_effect=fake_get), \
-             mock.patch.object(noisy.time, "sleep"), \
-             mock.patch.object(noisy.Crawler, "_is_timeout_reached", return_value=True):
+        with (
+            mock.patch.object(noisy.requests, "get", side_effect=fake_get),
+            mock.patch.object(noisy.time, "sleep"),
+            mock.patch.object(noisy.Crawler, "_is_timeout_reached", return_value=True),
+        ):
             c.crawl()  # must return cleanly
 
     def test_crawl_handles_request_exception_then_times_out(self):
@@ -417,10 +456,11 @@ class TestCrawl:
             )
 
         # Once we get a body, the very next _is_timeout_reached call returns True.
-        with mock.patch.object(noisy.requests, "get", side_effect=fake_get), \
-             mock.patch.object(noisy.time, "sleep"), \
-             mock.patch.object(noisy.Crawler, "_is_timeout_reached",
-                               return_value=True):
+        with (
+            mock.patch.object(noisy.requests, "get", side_effect=fake_get),
+            mock.patch.object(noisy.time, "sleep"),
+            mock.patch.object(noisy.Crawler, "_is_timeout_reached", return_value=True),
+        ):
             c.crawl()
 
         assert call_count["n"] >= 2  # got past the first failing request
@@ -433,8 +473,10 @@ class TestCrawl:
             exc = seq.pop(0)
             raise exc
 
-        with mock.patch.object(noisy.requests, "get", side_effect=fake_get), \
-             mock.patch.object(noisy.time, "sleep"):
+        with (
+            mock.patch.object(noisy.requests, "get", side_effect=fake_get),
+            mock.patch.object(noisy.time, "sleep"),
+        ):
             c.crawl()  # MemoryError logged, then CrawlerTimedOut returns.
 
     def test_crawl_handles_location_parse_error(self):
@@ -444,6 +486,8 @@ class TestCrawl:
         def fake_get(*a, **kw):
             raise seq.pop(0)
 
-        with mock.patch.object(noisy.requests, "get", side_effect=fake_get), \
-             mock.patch.object(noisy.time, "sleep"):
+        with (
+            mock.patch.object(noisy.requests, "get", side_effect=fake_get),
+            mock.patch.object(noisy.time, "sleep"),
+        ):
             c.crawl()

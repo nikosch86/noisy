@@ -4,7 +4,7 @@
 
 A simple Python script that generates random HTTP/DNS traffic noise in the background while you go about your regular web browsing, to make your web traffic data less valuable for selling and for extra obscurity.
 
-Tested on Python 3.12 across Linux, macOS, and Windows (x86_64 and arm64).
+Tested on Python 3.12 across Linux, macOS, and Windows (x86_64 and arm64). Requires Python 3.10+.
 
 ## Getting Started
 

@@ -5,10 +5,17 @@ import logging
 import random
 import re
 import time
+from importlib.metadata import PackageNotFoundError, version as _pkg_version
 
 import requests
 from urllib3.exceptions import LocationParseError
 from urllib.parse import urljoin, urlparse
+
+
+try:
+    __version__ = _pkg_version("noisy")
+except PackageNotFoundError:
+    __version__ = "0.0.0+unknown"
 
 
 class Crawler(object):
@@ -24,6 +31,7 @@ class Crawler(object):
         """
         Raised when the specified timeout is exceeded
         """
+
         pass
 
     def _request(self, url):
@@ -33,7 +41,7 @@ class Crawler(object):
         :return: the response Requests object
         """
         random_user_agent = random.choice(self._config["user_agents"])
-        headers = {'user-agent': random_user_agent}
+        headers = {"user-agent": random_user_agent}
 
         response = requests.get(url, headers=headers, timeout=5)
 
@@ -59,7 +67,9 @@ class Crawler(object):
 
         # '//' means keep the current protocol used to access this URL
         if link.startswith("//"):
-            return "{}://{}{}".format(parsed_root_url.scheme, parsed_url.netloc, parsed_url.path)
+            return "{}://{}{}".format(
+                parsed_root_url.scheme, parsed_url.netloc, parsed_url.path
+            )
 
         # possibly a relative path
         if not parsed_url.scheme:
@@ -78,11 +88,13 @@ class Crawler(object):
         :return: boolean indicating whether the URL is valid or not
         """
         regex = re.compile(
-            r'^(?:http|ftp)s?://'  # http:// or https://
-            r'(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+(?:[A-Z]{2,6}\.?|[A-Z0-9-]{2,}\.?)|'  # domain...
-            r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})'  # ...or ip
-            r'(?::\d+)?'  # optional port
-            r'(?:/?|[/?]\S+)$', re.IGNORECASE)
+            r"^(?:http|ftp)s?://"  # http:// or https://
+            r"(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+(?:[A-Z]{2,6}\.?|[A-Z0-9-]{2,}\.?)|"  # domain...
+            r"\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})"  # ...or ip
+            r"(?::\d+)?"  # optional port
+            r"(?:/?|[/?]\S+)$",
+            re.IGNORECASE,
+        )
         return re.match(regex, url) is not None
 
     def _is_blacklisted(self, url):
@@ -91,7 +103,10 @@ class Crawler(object):
         :param url: full URL
         :return: boolean indicating whether a URL is blacklisted or not
         """
-        return any(blacklisted_url in url for blacklisted_url in self._config["blacklisted_urls"])
+        return any(
+            blacklisted_url in url
+            for blacklisted_url in self._config["blacklisted_urls"]
+        )
 
     def _should_accept_url(self, url):
         """
@@ -125,7 +140,7 @@ class Crawler(object):
         and blacklists it so we don't visit it in the future
         :param link: link to remove and blacklist
         """
-        self._config['blacklisted_urls'].append(link)
+        self._config["blacklisted_urls"].append(link)
         del self._links[self._links.index(link)]
 
     def _browse_from_links(self):
@@ -135,7 +150,7 @@ class Crawler(object):
         link that is not responsive or that contains no other links.
         """
         depth = 0
-        while self._links and depth < self._config['max_depth']:
+        while self._links and depth < self._config["max_depth"]:
             if self._is_timeout_reached():
                 raise self.CrawlerTimedOut
 
@@ -145,7 +160,11 @@ class Crawler(object):
                 sub_page = self._request(random_link).content
                 sub_links = self._extract_urls(sub_page, random_link)
 
-                time.sleep(random.randrange(self._config["min_sleep"], self._config["max_sleep"]))
+                time.sleep(
+                    random.randrange(
+                        self._config["min_sleep"], self._config["max_sleep"]
+                    )
+                )
 
                 if len(sub_links) > 1:
                     self._links = sub_links
@@ -153,7 +172,10 @@ class Crawler(object):
                     self._remove_and_blacklist(random_link)
 
             except requests.exceptions.RequestException:
-                logging.debug("Exception on URL: %s, removing from list and trying again!", random_link)
+                logging.debug(
+                    "Exception on URL: %s, removing from list and trying again!",
+                    random_link,
+                )
                 self._remove_and_blacklist(random_link)
 
             depth += 1
@@ -167,7 +189,7 @@ class Crawler(object):
         :param file_path: path of the config file
         :return:
         """
-        with open(file_path, 'r') as config_file:
+        with open(file_path, "r") as config_file:
             config = json.load(config_file)
             self.set_config(config)
 
@@ -200,7 +222,9 @@ class Crawler(object):
         """
         if self._config["timeout"] is False:
             return False
-        end_time = self._start_time + datetime.timedelta(seconds=self._config["timeout"])
+        end_time = self._start_time + datetime.timedelta(
+            seconds=self._config["timeout"]
+        )
         return datetime.datetime.now() >= end_time
 
     def crawl(self):
@@ -222,7 +246,9 @@ class Crawler(object):
                 logging.warning("Error connecting to root url: %s", url)
 
             except MemoryError:
-                logging.warning("Error: content at url: %s is exhausting the memory", url)
+                logging.warning(
+                    "Error: content at url: %s is exhausting the memory", url
+                )
 
             except LocationParseError:
                 logging.warning("Error encountered during parsing of: %s", url)
@@ -231,12 +257,22 @@ class Crawler(object):
                 logging.info("Timeout has exceeded, exiting")
                 return
 
+
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('-l', '--log', type=str, help='logging level', default='info')
-    parser.add_argument('-c', '--config', required=True, type=str, help='config file')
-    parser.add_argument('-t', '--timeout', required=False, type=int,
-                        help='for how long the crawler should be running, in seconds', default=False)
+    parser.add_argument(
+        "-V", "--version", action="version", version=f"noisy {__version__}"
+    )
+    parser.add_argument("-l", "--log", type=str, help="logging level", default="info")
+    parser.add_argument("-c", "--config", required=True, type=str, help="config file")
+    parser.add_argument(
+        "-t",
+        "--timeout",
+        required=False,
+        type=int,
+        help="for how long the crawler should be running, in seconds",
+        default=False,
+    )
     args = parser.parse_args()
 
     level = getattr(logging, args.log.upper())
@@ -246,10 +282,10 @@ def main():
     crawler.load_config_file(args.config)
 
     if args.timeout:
-        crawler.set_option('timeout', args.timeout)
+        crawler.set_option("timeout", args.timeout)
 
     crawler.crawl()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

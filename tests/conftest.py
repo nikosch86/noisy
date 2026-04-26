@@ -1,4 +1,5 @@
 """Pytest configuration: ensure the repo root is importable so `import noisy` works."""
+
 import os
 import sys
 
