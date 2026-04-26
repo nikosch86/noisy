@@ -1,7 +1,8 @@
-version: '3'
-
 services:
   noisy:
-    build:
-      context: ../../
+    # Pull the published multi-arch image:
+    image: ghcr.io/nikosch86/noisy:latest
+    # Or build from source:
+    # build:
+    #   context: ../../
     command: --config config.json
