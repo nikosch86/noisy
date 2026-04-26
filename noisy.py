@@ -128,46 +128,37 @@ class Crawler(object):
         self._config['blacklisted_urls'].append(link)
         del self._links[self._links.index(link)]
 
-    def _browse_from_links(self, depth=0):
+    def _browse_from_links(self):
         """
-        Selects a random link out of the available link list and visits it.
-        Blacklists any link that is not responsive or that contains no other links.
-        Please note that this function is recursive and will keep calling itself until
-        a dead end has reached or when we ran out of links
-        :param depth: our current link depth
+        Repeatedly picks a random link out of the available link list and visits it,
+        up to ``max_depth`` hops or until the link list is exhausted. Blacklists any
+        link that is not responsive or that contains no other links.
         """
-        is_depth_reached = depth >= self._config['max_depth']
-        if not len(self._links) or is_depth_reached:
-            logging.debug("Hit a dead end, moving to the next root URL")
-            # escape from the recursion, we don't have links to continue or we have reached the max depth
-            return
+        depth = 0
+        while self._links and depth < self._config['max_depth']:
+            if self._is_timeout_reached():
+                raise self.CrawlerTimedOut
 
-        if self._is_timeout_reached():
-            raise self.CrawlerTimedOut
+            random_link = random.choice(self._links)
+            try:
+                logging.info("Visiting %s", random_link)
+                sub_page = self._request(random_link).content
+                sub_links = self._extract_urls(sub_page, random_link)
 
-        random_link = random.choice(self._links)
-        try:
-            logging.info("Visiting {}".format(random_link))
-            sub_page = self._request(random_link).content
-            sub_links = self._extract_urls(sub_page, random_link)
+                time.sleep(random.randrange(self._config["min_sleep"], self._config["max_sleep"]))
 
-            # sleep for a random amount of time
-            time.sleep(random.randrange(self._config["min_sleep"], self._config["max_sleep"]))
+                if len(sub_links) > 1:
+                    self._links = sub_links
+                else:
+                    self._remove_and_blacklist(random_link)
 
-            # make sure we have more than 1 link to pick from
-            if len(sub_links) > 1:
-                # extract links from the new page
-                self._links = self._extract_urls(sub_page, random_link)
-            else:
-                # else retry with current link list
-                # remove the dead-end link from our list
+            except requests.exceptions.RequestException:
+                logging.debug("Exception on URL: %s, removing from list and trying again!", random_link)
                 self._remove_and_blacklist(random_link)
 
-        except requests.exceptions.RequestException:
-            logging.debug("Exception on URL: %s, removing from list and trying again!" % random_link)
-            self._remove_and_blacklist(random_link)
+            depth += 1
 
-        self._browse_from_links(depth + 1)
+        logging.debug("Hit a dead end, moving to the next root URL")
 
     def load_config_file(self, file_path):
         """
@@ -224,17 +215,17 @@ class Crawler(object):
             try:
                 body = self._request(url).content
                 self._links = self._extract_urls(body, url)
-                logging.debug("found {} links".format(len(self._links)))
+                logging.debug("found %d links", len(self._links))
                 self._browse_from_links()
 
             except requests.exceptions.RequestException:
-                logging.warning("Error connecting to root url: {}".format(url))
-                
+                logging.warning("Error connecting to root url: %s", url)
+
             except MemoryError:
-                logging.warning("Error: content at url: {} is exhausting the memory".format(url))
+                logging.warning("Error: content at url: %s is exhausting the memory", url)
 
             except LocationParseError:
-                logging.warning("Error encountered during parsing of: {}".format(url))
+                logging.warning("Error encountered during parsing of: %s", url)
 
             except self.CrawlerTimedOut:
                 logging.info("Timeout has exceeded, exiting")

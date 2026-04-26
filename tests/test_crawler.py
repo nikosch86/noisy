@@ -306,11 +306,12 @@ class TestBrowseFromLinks:
             assert get.call_count == 0
 
     def test_returns_immediately_at_max_depth(self):
-        c = make_crawler(max_depth=2)
+        # max_depth=0 means the loop never enters: any depth >= 0 is "reached".
+        c = make_crawler(max_depth=0)
         c._links = ["https://a.com/"]
         c._start_time = datetime.datetime.now()
         with mock.patch.object(noisy.requests, "get") as get:
-            c._browse_from_links(depth=2)
+            c._browse_from_links()
             assert get.call_count == 0
 
     def test_raises_crawler_timed_out_when_over_budget(self):

@@ -19,9 +19,7 @@ jobs:
         with:
           python-version: "3.12"
           cache: pip
-          cache-dependency-path: |
-            requirements.txt
-            requirements-dev.txt
+          cache-dependency-path: pyproject.toml
 
       - name: Install dependencies
         run: make install
@@ -33,7 +31,7 @@ jobs:
         run: make coverage
 
       - name: Smoke-run the crawler
-        run: python noisy.py --config config.json --timeout 60
+        run: noisy --config config.json --timeout 60
 
   binaries:
     needs: test
@@ -64,12 +62,12 @@ jobs:
         with:
           python-version: "3.12"
           cache: pip
-          cache-dependency-path: requirements.txt
+          cache-dependency-path: pyproject.toml
 
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt pyinstaller
+          pip install . pyinstaller
 
       - name: Build binary
         run: pyinstaller --onefile --name noisy noisy.py
