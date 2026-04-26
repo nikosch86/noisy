@@ -1,11 +1,12 @@
 PYTHON ?= python3
 PIP    ?= $(PYTHON) -m pip
 
-.PHONY: help install test coverage lint clean
+.PHONY: help install lock test coverage lint clean
 
 help:
 	@echo "Targets:"
 	@echo "  install   Install runtime + dev dependencies (editable)"
+	@echo "  lock      Regenerate requirements.lock from pyproject.toml"
 	@echo "  test      Run the unit test suite"
 	@echo "  coverage  Run tests with coverage report (fails under 85%)"
 	@echo "  lint      Run ruff over noisy.py and tests/"
@@ -13,6 +14,10 @@ help:
 
 install:
 	$(PIP) install -e ".[dev]"
+
+lock:
+	$(PYTHON) -m piptools compile --no-emit-index-url --no-emit-trusted-host \
+	  --output-file=requirements.lock pyproject.toml
 
 test:
 	$(PYTHON) -m pytest -q
