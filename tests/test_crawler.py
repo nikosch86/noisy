@@ -346,7 +346,7 @@ class TestBrowseFromLinks:
         c._links = ["https://a.com/"]
         c._start_time = datetime.datetime.now() - datetime.timedelta(seconds=10)
         with mock.patch.object(noisy.requests, "get"):
-            with pytest.raises(noisy.Crawler.CrawlerTimedOut):
+            with pytest.raises(noisy.CrawlerTimedOut):
                 c._browse_from_links()
 
     def test_happy_path_replaces_links_when_more_than_one_sublink(self):
@@ -467,7 +467,7 @@ class TestCrawl:
 
     def test_crawl_handles_memory_error(self):
         c = make_crawler(timeout=1)
-        seq = [MemoryError("oom"), noisy.Crawler.CrawlerTimedOut()]
+        seq = [MemoryError("oom"), noisy.CrawlerTimedOut()]
 
         def fake_get(*a, **kw):
             exc = seq.pop(0)
@@ -481,7 +481,7 @@ class TestCrawl:
 
     def test_crawl_handles_location_parse_error(self):
         c = make_crawler(timeout=1)
-        seq = [LocationParseError("bad"), noisy.Crawler.CrawlerTimedOut()]
+        seq = [LocationParseError("bad"), noisy.CrawlerTimedOut()]
 
         def fake_get(*a, **kw):
             raise seq.pop(0)

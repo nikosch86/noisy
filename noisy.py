@@ -18,7 +18,11 @@ except PackageNotFoundError:
     __version__ = "0.0.0+unknown"
 
 
-class Crawler(object):
+class CrawlerTimedOut(Exception):
+    """Raised when the specified timeout is exceeded."""
+
+
+class Crawler:
     def __init__(self):
         """
         Initializes the Crawl class
@@ -26,13 +30,6 @@ class Crawler(object):
         self._config = {}
         self._links = []
         self._start_time = None
-
-    class CrawlerTimedOut(Exception):
-        """
-        Raised when the specified timeout is exceeded
-        """
-
-        pass
 
     def _request(self, url):
         """
@@ -152,7 +149,7 @@ class Crawler(object):
         depth = 0
         while self._links and depth < self._config["max_depth"]:
             if self._is_timeout_reached():
-                raise self.CrawlerTimedOut
+                raise CrawlerTimedOut
 
             random_link = random.choice(self._links)
             try:
@@ -253,7 +250,7 @@ class Crawler(object):
             except LocationParseError:
                 logging.warning("Error encountered during parsing of: %s", url)
 
-            except self.CrawlerTimedOut:
+            except CrawlerTimedOut:
                 logging.info("Timeout has exceeded, exiting")
                 return
 
